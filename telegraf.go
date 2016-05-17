@@ -61,8 +61,8 @@ func (t *Telegraf) AddValue(field string, value interface{}) error {
 }
 
 func (t *Telegraf) SetTimestamp(timing time.Time) {
-	//t.timestamp = timing.UnixNano()
-	t.timestamp = timing.Unix()
+	t.timestamp = timing.UnixNano()
+	//t.timestamp = timing.Unix()
 }
 
 func (t *Telegraf) getMessage() (string, error) {
