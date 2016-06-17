@@ -10,7 +10,7 @@ func TestSendMessage(h *testing.T) {
 	for i := 0; i < 10000; i++ {
 		t := NewTelegraf()
 		t.SetProtocol("tcp")
-		t.SetServiceAddres("192.168.10.11:18094")
+		t.SetServiceAddress("192.168.10.11:18094")
 		t.SetMeasurement("lnkgift")
 		t.AddTag("user", "qianno")
 		t.AddTag("class", "jisuanji 1002")
