@@ -7,11 +7,11 @@ import (
 )
 
 func TestSendMessage(h *testing.T) {
+	t := NewTelegraf()
+	t.SetProtocol("tcp")
+	t.SetServiceAddress("118.193.80.78:18094")
 	for i := 0; i < 10000; i++ {
-		t := NewTelegraf()
-		t.SetProtocol("tcp")
-		t.SetServiceAddress("192.168.10.11:18094")
-		t.SetMeasurement("lnkgift")
+		t.SetMeasurement("student")
 		t.AddTag("user", "qianno")
 		t.AddTag("class", "jisuanji 1002")
 		age := rand.Intn(100)

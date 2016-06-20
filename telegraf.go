@@ -19,12 +19,57 @@ type Telegraf struct {
 	tags        map[string]string
 	values      map[string]interface{}
 	timestamp   int64
+
+	conn  net.Conn
+	msgCh chan []byte
 }
 
 func NewTelegraf() *Telegraf {
 	return &Telegraf{
 		tags:   make(map[string]string),
 		values: make(map[string]interface{}),
+		msgCh:  make(chan []byte),
+	}
+}
+
+func (t *Telegraf) read() {
+	for {
+		buf := make([]byte, 1024)
+		n, err := t.conn.Read(buf)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		fmt.Println(string(buf[1:n]))
+	}
+}
+
+func (t *Telegraf) keeepConnect() {
+	for {
+		var err error
+		t.conn, err = net.Dial(t.protocol, t.serviceAddress)
+		if err != nil {
+			fmt.Println(err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		go t.read()
+		for {
+			errCount := 0
+			select {
+			case msg := <-t.msgCh:
+				fmt.Println(string(msg))
+				_, err := t.conn.Write(msg)
+				if err != nil {
+					fmt.Println(err)
+					t.msgCh <- msg //if err write back the msg
+					errCount++
+				}
+			}
+			if errCount != 0 {
+				break
+			}
+		}
 	}
 }
 
@@ -34,6 +79,8 @@ func (t *Telegraf) SetProtocol(protocol string) {
 
 func (t *Telegraf) SetServiceAddress(address string) {
 	t.serviceAddress = address
+	go t.keeepConnect()
+	//time.Sleep(1 * time.Second)
 }
 
 func (t *Telegraf) SetMeasurement(measurement string) {
@@ -110,7 +157,7 @@ func (t *Telegraf) getMessage() (string, error) {
 	if t.timestamp != 0 {
 		message += fmt.Sprintf(" %d", t.timestamp)
 	}
-
+	message += "\n"
 	return message, nil
 }
 
@@ -130,19 +177,13 @@ func (t *Telegraf) Send() error {
 	t.Lock()
 	defer t.Unlock()
 
-	conn, err := net.Dial(t.protocol, t.serviceAddress)
-	if err != nil {
-		return err
-	}
-
 	message, err := t.getMessage()
 	if err != nil {
 		return err
 	}
-	fmt.Println(message)
-	fmt.Fprintf(conn, message)
-	time.Sleep(time.Millisecond * 15)
-	conn.Close()
+
+	t.msgCh <- []byte(message)
 	t.clean()
+
 	return nil
 }
